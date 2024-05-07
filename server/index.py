@@ -67,9 +67,9 @@ def expand_card_code(card_code):
         }
     return codes[card_code]
 
-THRESHOLD = -15
 
 def preprocess_image_for_inference(img_array):
+    THRESHOLD = -15
     grey_img = np.mean(img_array, axis=2) # Take the average across the RGB channels
     threshold = np.median(grey_img) + THRESHOLD
     binarized_img = np.where(grey_img > threshold, 1, 0) # Above median = 1 (white), else 0 (black)
