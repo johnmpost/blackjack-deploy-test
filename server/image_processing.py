@@ -1,6 +1,7 @@
-import cv2 as cv
 import numpy as np
-from PIL import Image
+import cv2 as cv
+import uuid
+import itertools as it
 
 def get_contours(image):
 
@@ -26,15 +27,7 @@ def get_contours(image):
   # Again finding the final contours and drawing them on the image.
   cont, hier = cv.findContours(newthresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
 
-  
-
   return cont
-
-def create_contour_mask(image, contour):
-  img_copy = np.zeros(shape=image.shape)
-  cv.drawContours(img_copy, [contour], -1, (255, 255, 255), 1)
-  gray_copy = cv.cvtColor(np.float32(img_copy), cv.COLOR_BGR2GRAY)
-  return gray_copy
 
 def filter_contours_by_area(contours, min_area):
   filtered_contours = []
@@ -43,6 +36,12 @@ def filter_contours_by_area(contours, min_area):
       if area >= min_area:
           filtered_contours.append(contour)
   return filtered_contours
+
+def create_contour_mask(image, contour):
+  img_copy = np.zeros(shape=image.shape)
+  cv.drawContours(img_copy, [contour], -1, (255, 255, 255), 1)
+  gray_copy = cv.cvtColor(np.float32(img_copy), cv.COLOR_BGR2GRAY)
+  return gray_copy
 
 def extend_line(p1, p2, distance=10000):
     diff = np.arctan2(p1[1] - p2[1], p1[0] - p2[0])
@@ -53,19 +52,18 @@ def extend_line(p1, p2, distance=10000):
     return ((p3_x, p3_y), (p4_x, p4_y))
 
 def find_edges(image):
-  edges = cv.Canny(np.uint8(image), 50, 150, apertureSize=3)
+  edges = cv.Canny(np.uint8(image), 60, 150, apertureSize=7)
   line_bag = []
   all_lines_found = False
 
-
   n = 30
   while not all_lines_found and n > 0:
-    edges = cv.Canny(np.uint8(image), 50, 150, apertureSize=3)
-    lines = cv.HoughLinesP(edges, 1, np.pi/180, threshold=50, minLineLength=25, maxLineGap=25)
+    edges = cv.Canny(np.uint8(image), 60, 150, apertureSize=7)
+    lines = cv.HoughLinesP(edges, 1, np.pi/180, threshold=60, minLineLength=110, maxLineGap=20)
     if lines is not None:
       x1, y1, x2, y2 = lines[0][0]
       (save_point_1, save_point_2) = extend_line((x1, y1), (x2, y2))
-      cv.line(image, save_point_1, save_point_2, (0, 0, 0), 4)
+      cv.line(image, save_point_1, save_point_2, (0, 0, 0), 9)
 
       line_bag.append((save_point_1,save_point_2))
       n= n-1
@@ -73,7 +71,6 @@ def find_edges(image):
       all_lines_found = True
 
   return line_bag
-
 
 def is_within_image(point, image_shape):
     return 0 <= point[0] < image_shape[1] and 0 <= point[1] < image_shape[0]
@@ -102,27 +99,6 @@ def find_intersections(lines, image_shape):
 
     return np.array(points, dtype=np.float32)
 
-def create_all_intersections_from_image(img):
-  contours = get_contours(img)
-  large_enough_contours = filter_contours_by_area(contours, 10000)
-  intersection_groups = []
-  for contour in large_enough_contours:
-    contour_mask = create_contour_mask(img, contour)
-    lines = find_edges(contour_mask)
-    intersections = find_intersections(lines,img.shape)
-    intersection_groups.append(intersections)
-  return intersection_groups
-
-def get_all_contour_masks(img):
-  contours = get_contours(img)
-  large_enough_contours = filter_contours_by_area(contours, 1000)
-  masks = []
-  for contour in large_enough_contours:
-    contour_mask = create_contour_mask(img, contour)
-    masks.append(contour_mask)
-
-  return masks
-   
 def sort_points_clockwise(points, epsilon=1e-8):
     sorted_points = []
     if len(points) >0:
@@ -147,8 +123,7 @@ def sort_points_clockwise(points, epsilon=1e-8):
 
     return sorted_points
 
-
-def fix_perspective(img, corners):
+def normalize_card(img, corners):
     # Define the desired rectangle after transformation
     width = 200  # define your desired width
     height = 300  # define your desired height
@@ -168,111 +143,62 @@ def crop_array(array, percent_height, percent_width):
     cropped_array = array[:cropped_height, :cropped_width]
     return cropped_array
 
-def orient_images_from_groups(image, groups):
-  images = []
-  for group in groups:
-    if len(group) ==4:
-      group = np.array(group, dtype=np.float32)
-      corners = sort_points_clockwise(group)
-      oriented_image = fix_perspective(image,corners)
-      images.append(oriented_image)
-  return images
+"""
+MASTER FUNCTIONS
+"""
 
-def split_image_into_number_and_suit(card_image):
-    height, width = card_image.shape[:2]
-    split_pos = int(height * 0.7)
-    number_image = card_image[:split_pos, :]
-    suit_image = card_image[split_pos:, :]
-    return number_image, suit_image
+def organize_points_into_cards(all_stack_points):
+  if (len(points) == 2):
+    return [[point for tup in all_stack_points for point in tup]]
+  number_points = len(points)
+  number_cards = number_points/4
+  jump = 0
+  index = 0
+  is_even = True
+  ordered_pairs = []
+  while index < number_points:
+      ordered_pairs.append(points[index])
+      if (index == 0 or index == number_points - 3):
+        is_even = False
+        index += 2
+      elif (index == number_points - 1):
+        index = number_points + 1
+      elif (is_even):
+        index += 3
+        is_even = False
+      else:
+        index -= 1
+        is_even = True
+  unchunked = [point for tup in ordered_pairs for point in tup]
+  chunked_list = [unchunked[i:i + 4] for i in range(0, len(unchunked), 4)]
+  return chunked_list
 
-def identify_label_from_list(card_image, template_images):
-    # Initialize variables to keep track of the best match
-    best_match = None
-    best_match_score = float('inf')
-    
-    # Convert card image to grayscale
-    card_gray = cv.cvtColor(card_image, cv.COLOR_BGR2GRAY)
-    
-    # Iterate over template images
-    for label, template_image in template_images.items():
-        # Match template to card image
-        result = cv.matchTemplate(card_gray, template_image, cv.TM_SQDIFF_NORMED)
-        
-        # Get the minimum squared difference value
-        min_val, _, min_loc, _ = cv.minMaxLoc(result)
-        
-        # Update best match if this is the closest match so far
-        if min_val < best_match_score:
-            best_match_score = min_val
-            best_match = label
-    
-    return best_match
+def get_stacks(img):
+  contours = get_contours(img)
+  large_enough_contours = filter_contours_by_area(contours, 7000)
+  stacks_points = []
+  for contour in large_enough_contours:
+    contour_mask = create_contour_mask(img, contour)
+    lines = find_edges(contour_mask)
+    intersections = find_intersections(lines,img.shape)
+    cards_as_points = organize_points_into_cards(intersections)
+    stacks_points.append(cards_as_points)
 
+  return stacks_points
 
+def point_stacks_to_card_image_stacks(player_image, point_stacks):
+    separated_cards = []
+    for stack in point_stacks:
+        for card_bounding_points in stack:
+            if len(card_bounding_points) == 4:
+                as_array = np.array(card_bounding_points, dtype=np.float32)
+                sorted_bounding_points = sort_points_clockwise(as_array)
+                oriented_image = normalize_card(player_image, sorted_bounding_points)
+                separated_cards.append(oriented_image)
+    return separated_cards
 
-def create_prediction_from_image(image):
-
-  cards = {
-      'AH': cv.imread('./templates/hearts/AH.jpg', cv.IMREAD_GRAYSCALE),
-      '2H': cv.imread('./templates/hearts/2H.jpg', cv.IMREAD_GRAYSCALE),
-      '3H': cv.imread('./templates/hearts/3H.jpg', cv.IMREAD_GRAYSCALE),
-      '4H': cv.imread('./templates/hearts/4H.jpg', cv.IMREAD_GRAYSCALE),
-      '5H': cv.imread('./templates/hearts/5H.jpg', cv.IMREAD_GRAYSCALE),
-      '6H': cv.imread('./templates/hearts/6H.jpg', cv.IMREAD_GRAYSCALE),
-      '7H': cv.imread('./templates/hearts/7H.jpg', cv.IMREAD_GRAYSCALE),
-      '8H': cv.imread('./templates/hearts/8H.jpg', cv.IMREAD_GRAYSCALE),
-      '9H': cv.imread('./templates/hearts/9H.jpg', cv.IMREAD_GRAYSCALE),
-      '10H': cv.imread('./templates/hearts/10H.jpg', cv.IMREAD_GRAYSCALE),
-      'JH': cv.imread('./templates/hearts/JH.jpg', cv.IMREAD_GRAYSCALE),
-      'QH': cv.imread('./templates/hearts/QH.jpg', cv.IMREAD_GRAYSCALE),
-      'KH': cv.imread('./templates/hearts/KH.jpg', cv.IMREAD_GRAYSCALE),
-      'AD': cv.imread('./templates/diamonds/AD.jpg', cv.IMREAD_GRAYSCALE),
-      '2D': cv.imread('./templates/diamonds/2D.jpg', cv.IMREAD_GRAYSCALE),
-      '3D': cv.imread('./templates/diamonds/3D.jpg', cv.IMREAD_GRAYSCALE),
-      '4D': cv.imread('./templates/diamonds/4D.jpg', cv.IMREAD_GRAYSCALE),
-      '5D': cv.imread('./templates/diamonds/5D.jpg', cv.IMREAD_GRAYSCALE),
-      '6D': cv.imread('./templates/diamonds/6D.jpg', cv.IMREAD_GRAYSCALE),
-      '7D': cv.imread('./templates/diamonds/7D.jpg', cv.IMREAD_GRAYSCALE),
-      '8D': cv.imread('./templates/diamonds/8D.jpg', cv.IMREAD_GRAYSCALE),
-      '9D': cv.imread('./templates/diamonds/9D.jpg', cv.IMREAD_GRAYSCALE),
-      '10D': cv.imread('./templates/diamonds/10D.jpg', cv.IMREAD_GRAYSCALE),
-      'JD': cv.imread('./templates/diamonds/JD.jpg', cv.IMREAD_GRAYSCALE),
-      'QD': cv.imread('./templates/diamonds/QD.jpg', cv.IMREAD_GRAYSCALE),
-      'KD': cv.imread('./templates/diamonds/KD.jpg', cv.IMREAD_GRAYSCALE),
-      'AC': cv.imread('./templates/clubs/AC.jpg', cv.IMREAD_GRAYSCALE),
-      '2C': cv.imread('./templates/clubs/2C.jpg', cv.IMREAD_GRAYSCALE),
-      '3C': cv.imread('./templates/clubs/3C.jpg', cv.IMREAD_GRAYSCALE),
-      '4C': cv.imread('./templates/clubs/4C.jpg', cv.IMREAD_GRAYSCALE),
-      '5C': cv.imread('./templates/clubs/5C.jpg', cv.IMREAD_GRAYSCALE),
-      '6C': cv.imread('./templates/clubs/6C.jpg', cv.IMREAD_GRAYSCALE),
-      '7C': cv.imread('./templates/clubs/7C.jpg', cv.IMREAD_GRAYSCALE),
-      '8C': cv.imread('./templates/clubs/8C.jpg', cv.IMREAD_GRAYSCALE),
-      '9C': cv.imread('./templates/clubs/9C.jpg', cv.IMREAD_GRAYSCALE),
-      '10C': cv.imread('./templates/clubs/10C.jpg', cv.IMREAD_GRAYSCALE),
-      'JC': cv.imread('./templates/clubs/JC.jpg', cv.IMREAD_GRAYSCALE),
-      'QC': cv.imread('./templates/clubs/QC.jpg', cv.IMREAD_GRAYSCALE),
-      'KC': cv.imread('./templates/clubs/KC.jpg', cv.IMREAD_GRAYSCALE),
-      'AS': cv.imread('./templates/spades/AS.jpg', cv.IMREAD_GRAYSCALE),
-      '2S': cv.imread('./templates/spades/2S.jpg', cv.IMREAD_GRAYSCALE),
-      '3S': cv.imread('./templates/spades/3S.jpg', cv.IMREAD_GRAYSCALE),
-      '4S': cv.imread('./templates/spades/4S.jpg', cv.IMREAD_GRAYSCALE),
-      '5S': cv.imread('./templates/spades/5S.jpg', cv.IMREAD_GRAYSCALE),
-      '6S': cv.imread('./templates/spades/6S.jpg', cv.IMREAD_GRAYSCALE),
-      '7S': cv.imread('./templates/spades/7S.jpg', cv.IMREAD_GRAYSCALE),
-      '8S': cv.imread('./templates/spades/8S.jpg', cv.IMREAD_GRAYSCALE),
-      '9S': cv.imread('./templates/spades/9S.jpg', cv.IMREAD_GRAYSCALE),
-      '10S': cv.imread('./templates/spades/10S.jpg', cv.IMREAD_GRAYSCALE),
-      'JS': cv.imread('./templates/spades/JS.jpg', cv.IMREAD_GRAYSCALE),
-      'QS': cv.imread('./templates/spades/QS.jpg', cv.IMREAD_GRAYSCALE),
-      'KS': cv.imread('./templates/spades/KS.jpg', cv.IMREAD_GRAYSCALE),
-  }
-
-  intersection_groups= create_all_intersections_from_image(image)
-  images= orient_images_from_groups(image,intersection_groups)
-  results = []
-  for img in images:
-    crop_img = crop_array(img,0.25,0.15)
-    classification = identify_label_from_list(crop_img,cards)
-    results.append(classification)
-  return results
-
+def player_image_to_index_img_stacks(player_image):
+    stacks_as_points = get_stacks(player_image)
+    stacks_as_card_images = point_stacks_to_card_image_stacks(player_image, stacks_as_points)
+    stacks_as_index_images = [[crop_array(card_img, .25, .15) for card_img in stack] for stack in stacks_as_card_images]
+    return stacks_as_index_images

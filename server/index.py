@@ -5,9 +5,10 @@ import tensorflow as tf
 from PIL import Image
 import io
 import numpy as np
+from image_processing import player_image_to_index_img_stacks
 
-new_model = tf.keras.models.load_model('trained_model.keras')
-new_model.summary()
+model = tf.keras.models.load_model('trained_model.keras')
+model.summary()
 
 def expand_card_code(card_code):
     codes = {
@@ -66,9 +67,25 @@ def expand_card_code(card_code):
         }
     return codes[card_code]
 
+THRESHOLD = -15
+
+def preprocess_image_for_inference(img_array):
+    grey_img = np.mean(img_array, axis=2) # Take the average across the RGB channels
+    threshold = np.median(grey_img) + THRESHOLD
+    binarized_img = np.where(grey_img > threshold, 1, 0) # Above median = 1 (white), else 0 (black)
+    binarized_img_stacked = np.stack([binarized_img]*3, axis=-1)
+    return binarized_img_stacked
+
+def infer_card_code_from_index(img_array):
+    preprocessed_img_array = preprocess_image_for_inference(img_array)
+    first, *rest = model.predict([preprocessed_img_array])
+    return first
+
 # returns a list of stacks
 def infer_player(image_bytes):
-    pass
+    index_img_stacks = player_image_to_index_img_stacks(image_bytes)
+    inferred_stacks = [[expand_card_code(infer_card_code_from_index(img)) for img in img_stack] for img_stack in index_img_stacks]
+    return inferred_stacks
 
 # returns a full table record
 def infer_frame(image_bytes):
