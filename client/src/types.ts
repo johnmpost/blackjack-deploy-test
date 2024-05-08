@@ -11,6 +11,13 @@ export type Card = {
 
 export type Hand = Card[];
 
+export type InferredFrame = {
+  dealer: Hand[];
+  player1: Hand[];
+  player2: Hand[];
+  player3: Hand[];
+};
+
 export type EncodedFrame = {
   dealer: Hand;
   player1: Hand[];

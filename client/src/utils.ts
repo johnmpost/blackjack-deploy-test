@@ -4,6 +4,7 @@ import {
   Card,
   EncodedFrame,
   Hand,
+  InferredFrame,
   PlayAppState,
   Prescription,
   Rank,
@@ -67,7 +68,6 @@ const removeOneCardInstance = (card: Card) => (cards: Card[]) => {
 export const findNewCards =
   (cardsToCheck: Card[]) =>
   (currCards: Card[]): Card[] => {
-    console.log(cardsToCheck, currCards);
     if (currCards.length === 0) {
       return cardsToCheck;
     }
@@ -356,3 +356,10 @@ export const prescribeHand = (
   );
   return hardTotalPresc;
 };
+
+export const inferredFrameToFrame = (
+  inferredFrame: InferredFrame,
+): EncodedFrame => ({
+  ...inferredFrame,
+  dealer: inferredFrame.dealer.length === 0 ? [] : inferredFrame.dealer[0],
+});

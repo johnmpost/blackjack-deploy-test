@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Video } from "./components/Video";
-import { AppState } from "./types";
-import { assimilateUpdatedState, initialSetupState } from "./utils";
+import { AppState, InferredFrame } from "./types";
+import {
+  assimilateUpdatedState,
+  inferredFrameToFrame,
+  initialSetupState,
+} from "./utils";
 import GameView from "./components/GameView";
 import DeckCountSelector from "./components/DeckCountSelector";
 
@@ -10,11 +14,17 @@ const App = () => {
   const [appState, setAppState] = useState<AppState>(initialSetupState);
 
   useEffect(() => {
-    // const ws = new WebSocket("ws://184.105.6.45:4444");
-    const ws = new WebSocket("ws://184.105.6.45:4444");
+    const ws = new WebSocket("ws://localhost:4444");
     ws.onmessage = e => {
-      console.log(e);
-      setAppState(assimilateUpdatedState(e.data));
+      // const inferredFrame = JSON.parse(e.data);
+      const inferredFrame: InferredFrame = {
+        dealer: [],
+        player1: [],
+        player2: [],
+        player3: [],
+      };
+      console.log(inferredFrame);
+      setAppState(assimilateUpdatedState(inferredFrameToFrame(inferredFrame)));
     };
 
     navigator.mediaDevices
