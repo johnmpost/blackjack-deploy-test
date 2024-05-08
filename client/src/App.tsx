@@ -23,7 +23,7 @@ const App = () => {
         player2: [],
         player3: [],
       };
-      console.log(inferredFrame);
+      console.log("inferred frame", inferredFrame);
       setAppState(assimilateUpdatedState(inferredFrameToFrame(inferredFrame)));
     };
 
@@ -41,6 +41,10 @@ const App = () => {
 
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
+
+        if (appState.kind === "setup") {
+          return;
+        }
 
         setInterval(() => {
           canvas.width = videoRef.current?.videoWidth!;
@@ -62,7 +66,7 @@ const App = () => {
           }
         }, 1000);
       });
-  }, []);
+  }, [appState.kind]);
 
   return (
     <>
