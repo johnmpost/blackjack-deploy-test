@@ -18,8 +18,9 @@ const DealerHandView: FC<Props> = ({ hand, style }) => {
         margin: 0,
       }}
     >
-      {hand.map(card => (
+      {hand.map((card, i) => (
         <img
+          key={i}
           src={`/${card.suit}_${card.rank}.svg`}
           style={{
             width: "8vw",

@@ -37,8 +37,9 @@ const PlayerView: FC<Props> = ({ hands: handWithPrescriptions, style }) => {
           flexGrow: 1,
         }}
       >
-        {handWithPrescriptions.map(handWithPrescription => (
+        {handWithPrescriptions.map((handWithPrescription, i) => (
           <div
+            key={i}
             style={{
               width: handWidthCssCalcStr(handWithPrescription.hand),
               height: handHeightCssCalcStr(handWithPrescription.hand),
@@ -50,6 +51,7 @@ const PlayerView: FC<Props> = ({ hands: handWithPrescriptions, style }) => {
           >
             {handWithPrescription.hand.map((card, i) => (
               <img
+                key={i}
                 src={`/${card.suit}_${card.rank}.svg`}
                 style={{
                   display: "block",

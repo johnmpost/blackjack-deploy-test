@@ -4,18 +4,28 @@ export type Suit = "hearts" | "spades" | "diamonds" | "clubs";
 export type Rank = "ace" | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | "jack" | "king" | "queen";
 export type SimplifiedRank = "ace" | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | "ten";
 
+// prettier-ignore
+export type InferredRank = "ace" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "jack" | "king" | "queen";
+
 export type Card = {
   suit: Suit;
   rank: Rank;
 };
 
+export type InferredCard = {
+  suit: Suit;
+  rank: InferredRank;
+};
+
 export type Hand = Card[];
 
+export type InferredHand = InferredCard[];
+
 export type InferredFrame = {
-  dealer: Hand[];
-  player1: Hand[];
-  player2: Hand[];
-  player3: Hand[];
+  dealer: InferredHand[];
+  player1: InferredHand[];
+  player2: InferredHand[];
+  player3: InferredHand[];
 };
 
 export type EncodedFrame = {

@@ -5,6 +5,7 @@ import {
   EncodedFrame,
   Hand,
   InferredFrame,
+  InferredRank,
   PlayAppState,
   Prescription,
   Rank,
@@ -357,9 +358,28 @@ export const prescribeHand = (
   return hardTotalPresc;
 };
 
+const inferredRankToRank = (rank: InferredRank): Rank =>
+  match(rank)
+    .with("2", "3", "4", "5", "6", "7", "8", "9", "10", c => parseInt(c))
+    .otherwise(r => r) as Rank;
+
 export const inferredFrameToFrame = (
   inferredFrame: InferredFrame,
 ): EncodedFrame => ({
-  ...inferredFrame,
-  dealer: inferredFrame.dealer.length === 0 ? [] : inferredFrame.dealer[0],
+  dealer:
+    inferredFrame.dealer.length === 0
+      ? []
+      : inferredFrame.dealer[0].map(c => ({
+          suit: c.suit,
+          rank: inferredRankToRank(c.rank),
+        })),
+  player1: inferredFrame.player1.map(hand =>
+    hand.map(c => ({ suit: c.suit, rank: inferredRankToRank(c.rank) })),
+  ),
+  player2: inferredFrame.player1.map(hand =>
+    hand.map(c => ({ suit: c.suit, rank: inferredRankToRank(c.rank) })),
+  ),
+  player3: inferredFrame.player1.map(hand =>
+    hand.map(c => ({ suit: c.suit, rank: inferredRankToRank(c.rank) })),
+  ),
 });
