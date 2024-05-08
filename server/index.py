@@ -107,6 +107,10 @@ def infer_frame(image_bytes):
     p1_img = img.crop(p1)
     p2_img = img.crop(p2)
     p3_img = img.crop(p3)
+    # dealer_img.show()
+    # p1_img.show()
+    # p2_img.show()
+    # p3_img.show()
 
     # list of stacks, stack is list of cards
     dealer_stacks = infer_player(dealer_img)
@@ -130,10 +134,10 @@ async def main():
     async with serve(get_data, "0.0.0.0", 4444):
         await asyncio.Future()
 
-with open("./test-table.jpg", "rb") as file:
-    img_bytes = file.read()
+# with open("./test-table.jpg", "rb") as file:
+#     img_bytes = file.read()
 
-print(infer_frame(img_bytes))
+# print(infer_frame(img_bytes))
 
 print("starting server")
 asyncio.run(main())

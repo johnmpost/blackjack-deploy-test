@@ -62,11 +62,11 @@ def find_edges(image):
   n = 30
   while not all_lines_found and n > 0:
     edges = cv.Canny(np.uint8(image), 70, 150, apertureSize=7)
-    lines = cv.HoughLinesP(edges, 1, np.pi/180, threshold=70, minLineLength=130, maxLineGap=20)
+    lines = cv.HoughLinesP(edges, 1, np.pi/180, threshold=70, minLineLength=50, maxLineGap=20)
     if lines is not None:
       x1, y1, x2, y2 = lines[0][0]
       (save_point_1, save_point_2) = extend_line((x1, y1), (x2, y2))
-      cv.line(image, save_point_1, save_point_2, (0, 0, 0), 12)
+      cv.line(image, save_point_1, save_point_2, (0, 0, 0), 16) #25
 
       line_bag.append((save_point_1,save_point_2))
       n= n-1
@@ -188,17 +188,25 @@ def show_lines(lines, img):
   # lines_image = Image.fromarray(extended_lines_image)
   # lines_image.show()
 
+def point_is_inside_contour(point, contour):
+  leeway = 30
+  return cv.pointPolygonTest(contour, (point[0], point[1]), True) > -leeway
+
 def get_stacks(img):
   contours = get_contours(img)
   large_enough_contours = filter_contours_by_area(contours, 7000)
   stacks_points = []
   for contour in large_enough_contours:
     contour_mask = create_contour_mask(img, contour)
+    # cv.imshow("contour", contour_mask)
+    # cv.waitKey(0)
     lines = find_edges(contour_mask)
+    # show_lines(lines, img)
     intersections = find_intersections(lines,img.shape)
     sorted_points = sorted(intersections, key=lambda point: point[0])
     # paired_points = [(sorted_points[i], sorted_points[i+1]) for i in range(0, len(sorted_points), 2)]
-    paired_points = eliminate_non_corners_and_organize_corner_points(sorted_points)
+    sorted_points_within_contour = [pt for pt in sorted_points if point_is_inside_contour(pt, contour)]
+    paired_points = eliminate_non_corners_and_organize_corner_points(sorted_points_within_contour)
     cards_as_points = organize_points_into_cards(paired_points)
     stacks_points.append(cards_as_points)
 
