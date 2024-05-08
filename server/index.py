@@ -10,6 +10,9 @@ from image_processing import player_image_to_index_img_stacks
 model = tf.keras.models.load_model('trained_model.keras')
 model.summary()
 
+with open('label_mapping.json', 'r') as file:
+    index_to_label = json.load(file)
+
 def expand_card_code(card_code):
     codes = {
         'AH': {'suit': "hearts", 'rank': "ace"},
@@ -78,8 +81,10 @@ def preprocess_image_for_inference(img_array):
 
 def infer_card_code_from_index(img_array):
     preprocessed_img_array = preprocess_image_for_inference(img_array)
-    first, *rest = model.predict([preprocessed_img_array])
-    return first
+    softmax, *rest = model.predict(np.expand_dims(preprocessed_img_array, axis=0))
+    predicted_label_index = np.argmax(softmax)
+    predicted_card_code = index_to_label[str(predicted_label_index)]
+    return predicted_card_code
 
 # returns a list of stacks
 def infer_player(image_bytes):
@@ -94,14 +99,14 @@ def infer_frame(image_bytes):
     width, height = img.size
 
     dealer = (0, 0, width, height//2)
-    p1_left = (0, height//2, width//3, height)
-    p2_left = (width//3, height//2, width//3*2, height)
-    p3_left = (width//3*2, height//2, width, height)
+    p1 = (0, height//2, width//3, height)
+    p2 = (width//3, height//2, width//3*2, height)
+    p3 = (width//3*2, height//2, width, height)
 
     dealer_img = img.crop(dealer)
-    p1_left_img = img.crop(p1_left)
-    p2_left_img = img.crop(p2_left)
-    p3_left_img = img.crop(p3_left)
+    p1_img = img.crop(p1)
+    p2_img = img.crop(p2)
+    p3_img = img.crop(p3)
 
     # list of stacks, stack is list of cards
     dealer_stacks = infer_player(dealer_img)
@@ -124,6 +129,11 @@ async def get_data(websocket):
 async def main():
     async with serve(get_data, "0.0.0.0", 4444):
         await asyncio.Future()
+
+with open("./test-table.jpg", "rb") as file:
+    img_bytes = file.read()
+
+print(infer_frame(img_bytes))
 
 print("starting server")
 asyncio.run(main())

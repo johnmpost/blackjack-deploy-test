@@ -2,10 +2,13 @@ import numpy as np
 import cv2 as cv
 import uuid
 import itertools as it
+from PIL import Image
+from point_pruning import eliminate_non_corners_and_organize_corner_points
 
 def get_contours(image):
 
   # Converting to grayscale
+  
   gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
 
   # Applying Otsu's thresholding
@@ -52,18 +55,18 @@ def extend_line(p1, p2, distance=10000):
     return ((p3_x, p3_y), (p4_x, p4_y))
 
 def find_edges(image):
-  edges = cv.Canny(np.uint8(image), 60, 150, apertureSize=7)
+  edges = cv.Canny(np.uint8(image), 70, 150, apertureSize=7)
   line_bag = []
   all_lines_found = False
 
   n = 30
   while not all_lines_found and n > 0:
-    edges = cv.Canny(np.uint8(image), 60, 150, apertureSize=7)
-    lines = cv.HoughLinesP(edges, 1, np.pi/180, threshold=60, minLineLength=110, maxLineGap=20)
+    edges = cv.Canny(np.uint8(image), 70, 150, apertureSize=7)
+    lines = cv.HoughLinesP(edges, 1, np.pi/180, threshold=70, minLineLength=130, maxLineGap=20)
     if lines is not None:
       x1, y1, x2, y2 = lines[0][0]
       (save_point_1, save_point_2) = extend_line((x1, y1), (x2, y2))
-      cv.line(image, save_point_1, save_point_2, (0, 0, 0), 9)
+      cv.line(image, save_point_1, save_point_2, (0, 0, 0), 12)
 
       line_bag.append((save_point_1,save_point_2))
       n= n-1
@@ -148,16 +151,16 @@ MASTER FUNCTIONS
 """
 
 def organize_points_into_cards(all_stack_points):
-  if (len(points) == 2):
+  if (len(all_stack_points) == 2):
     return [[point for tup in all_stack_points for point in tup]]
-  number_points = len(points)
+  number_points = len(all_stack_points)
   number_cards = number_points/4
   jump = 0
   index = 0
   is_even = True
   ordered_pairs = []
   while index < number_points:
-      ordered_pairs.append(points[index])
+      ordered_pairs.append(all_stack_points[index])
       if (index == 0 or index == number_points - 3):
         is_even = False
         index += 2
@@ -173,6 +176,18 @@ def organize_points_into_cards(all_stack_points):
   chunked_list = [unchunked[i:i + 4] for i in range(0, len(unchunked), 4)]
   return chunked_list
 
+def show_lines(lines, img):
+  extended_lines_image = np.zeros(shape=img.shape)
+
+  for line in lines:
+    ((x1, y1), (x2, y2)) = line
+    cv.line(extended_lines_image, (x1, y1), (x2, y2), (0, 255, 0), 6)
+
+  cv.imshow("image", extended_lines_image)
+  cv.waitKey(0)
+  # lines_image = Image.fromarray(extended_lines_image)
+  # lines_image.show()
+
 def get_stacks(img):
   contours = get_contours(img)
   large_enough_contours = filter_contours_by_area(contours, 7000)
@@ -181,24 +196,30 @@ def get_stacks(img):
     contour_mask = create_contour_mask(img, contour)
     lines = find_edges(contour_mask)
     intersections = find_intersections(lines,img.shape)
-    cards_as_points = organize_points_into_cards(intersections)
+    sorted_points = sorted(intersections, key=lambda point: point[0])
+    # paired_points = [(sorted_points[i], sorted_points[i+1]) for i in range(0, len(sorted_points), 2)]
+    paired_points = eliminate_non_corners_and_organize_corner_points(sorted_points)
+    cards_as_points = organize_points_into_cards(paired_points)
     stacks_points.append(cards_as_points)
 
   return stacks_points
 
 def point_stacks_to_card_image_stacks(player_image, point_stacks):
-    separated_cards = []
+    image_stacks = []
     for stack in point_stacks:
+        separated_cards = []
         for card_bounding_points in stack:
             if len(card_bounding_points) == 4:
                 as_array = np.array(card_bounding_points, dtype=np.float32)
                 sorted_bounding_points = sort_points_clockwise(as_array)
                 oriented_image = normalize_card(player_image, sorted_bounding_points)
                 separated_cards.append(oriented_image)
-    return separated_cards
+        image_stacks.append(separated_cards)
+    return image_stacks
 
 def player_image_to_index_img_stacks(player_image):
-    stacks_as_points = get_stacks(player_image)
-    stacks_as_card_images = point_stacks_to_card_image_stacks(player_image, stacks_as_points)
+    img = np.array(player_image)
+    stacks_as_points = get_stacks(img)
+    stacks_as_card_images = point_stacks_to_card_image_stacks(img, stacks_as_points)
     stacks_as_index_images = [[crop_array(card_img, .25, .15) for card_img in stack] for stack in stacks_as_card_images]
     return stacks_as_index_images
