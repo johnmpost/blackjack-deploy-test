@@ -16,6 +16,7 @@ const App = () => {
   useEffect(() => {
     const ws = new WebSocket("wss://blackjack-server.johnpost.xyz");
     console.log("bjserver");
+    ws.onerror = console.log;
     ws.onmessage = e => {
       // const inferredFrame: InferredFrame = {
       //   dealer: [[{ suit: "clubs", rank: "king" }]],
