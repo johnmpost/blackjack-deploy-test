@@ -14,7 +14,7 @@ const App = () => {
   const [appState, setAppState] = useState<AppState>(initialSetupState);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://172.20.10.2:4444");
+    const ws = new WebSocket("ws://blackjack-server.johnpost.xyz");
     ws.onmessage = e => {
       // const inferredFrame: InferredFrame = {
       //   dealer: [[{ suit: "clubs", rank: "king" }]],
@@ -71,7 +71,7 @@ const App = () => {
               return ws.send(blob!);
             }, "image/jpeg");
           }
-        }, 1500);
+        }, 2000);
       });
   }, [appState.kind]);
 
