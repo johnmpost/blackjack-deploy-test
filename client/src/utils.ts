@@ -366,13 +366,10 @@ const inferredRankToRank = (rank: InferredRank): Rank =>
 export const inferredFrameToFrame = (
   inferredFrame: InferredFrame,
 ): EncodedFrame => ({
-  dealer:
-    inferredFrame.dealer.length === 0
-      ? []
-      : inferredFrame.dealer[0].map(c => ({
-          suit: c.suit,
-          rank: inferredRankToRank(c.rank),
-        })),
+  dealer: inferredFrame.dealer.flat().map(c => ({
+    suit: c.suit,
+    rank: inferredRankToRank(c.rank),
+  })),
   player1: inferredFrame.player1.map(hand =>
     hand.map(c => ({ suit: c.suit, rank: inferredRankToRank(c.rank) })),
   ),
