@@ -126,16 +126,17 @@ def infer_frame(image_bytes):
     }
     return result
 
+with open("./test-table-singles.jpg", "rb") as file:
+    img_bytes = file.read()
+
 async def get_data(websocket):
     async for message in websocket:
-        await websocket.send(json.dumps(infer_frame(message)))
+        await websocket.send(json.dumps(infer_frame(img_bytes)))
 
 async def main():
     async with serve(get_data, "0.0.0.0", 4444):
         await asyncio.Future()
 
-# with open("./test-table.jpg", "rb") as file:
-#     img_bytes = file.read()
 
 # print(infer_frame(img_bytes))
 
