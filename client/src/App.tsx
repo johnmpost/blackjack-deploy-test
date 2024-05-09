@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Video } from "./components/Video";
-import { AppState } from "./types";
+import { AppState, InferredFrame } from "./types";
 import {
   assimilateUpdatedState,
   inferredFrameToFrame,
@@ -16,6 +16,17 @@ const App = () => {
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:4444");
     ws.onmessage = e => {
+      // const inferredFrame: InferredFrame = {
+      //   dealer: [[{ suit: "clubs", rank: "king" }]],
+      //   player1: [
+      //     [
+      //       { suit: "spades", rank: "4" },
+      //       { suit: "diamonds", rank: "queen" },
+      //     ],
+      //   ],
+      //   player2: [[{ suit: "hearts", rank: "10" }]],
+      //   player3: [],
+      // };
       const inferredFrame = JSON.parse(e.data);
       console.log("inferred frame", inferredFrame);
       setAppState(assimilateUpdatedState(inferredFrameToFrame(inferredFrame)));
