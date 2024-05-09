@@ -370,13 +370,19 @@ export const inferredFrameToFrame = (
     suit: c.suit,
     rank: inferredRankToRank(c.rank),
   })),
-  player1: inferredFrame.player1.map(hand =>
-    hand.map(c => ({ suit: c.suit, rank: inferredRankToRank(c.rank) })),
-  ),
-  player2: inferredFrame.player2.map(hand =>
-    hand.map(c => ({ suit: c.suit, rank: inferredRankToRank(c.rank) })),
-  ),
-  player3: inferredFrame.player3.map(hand =>
-    hand.map(c => ({ suit: c.suit, rank: inferredRankToRank(c.rank) })),
-  ),
+  player1: inferredFrame.player1
+    .map(hand =>
+      hand.map(c => ({ suit: c.suit, rank: inferredRankToRank(c.rank) })),
+    )
+    .reverse(),
+  player2: inferredFrame.player2
+    .map(hand =>
+      hand.map(c => ({ suit: c.suit, rank: inferredRankToRank(c.rank) })),
+    )
+    .reverse(),
+  player3: inferredFrame.player3
+    .map(hand =>
+      hand.map(c => ({ suit: c.suit, rank: inferredRankToRank(c.rank) })),
+    )
+    .reverse(),
 });
