@@ -2,22 +2,14 @@ import { Dispatch, FC, SetStateAction } from "react";
 import DealerHandView from "./DealerHandView";
 import PlayerView from "./PlayerView";
 import { AppState, PlayAppState } from "../types";
-import TrueCountView from "./TrueCountView";
-import { Button } from "@mui/joy";
-import { RestartAltOutlined } from "@mui/icons-material";
-import {
-  getTrueCount,
-  initialSetupState,
-  prescribeHand,
-  simplifyRank,
-} from "../utils";
+import { prescribeHand, simplifyRank } from "../utils";
 
 type Props = {
   setAppState: Dispatch<SetStateAction<AppState>>;
   appState: PlayAppState;
 };
 
-const GameView: FC<Props> = ({ setAppState, appState }) => {
+const GameView: FC<Props> = ({ appState }) => {
   const dealerUp =
     appState.simulatedGameState.dealer.length === 1 &&
     appState.simulatedGameState.dealer[0];
@@ -87,13 +79,13 @@ const GameView: FC<Props> = ({ setAppState, appState }) => {
             margin: "0.5em 0.5em",
           }}
         >
-          <TrueCountView
+          {/* <TrueCountView
             trueCount={getTrueCount(appState.numDecks, appState.cardsSeen)}
             sx={{
               boxShadow: "0.2em 0.2em 0.2em rgba(0,0,0, .2)",
             }}
-          />
-          <Button
+          /> */}
+          {/* <Button
             size="sm"
             color="danger"
             variant="solid"
@@ -104,7 +96,7 @@ const GameView: FC<Props> = ({ setAppState, appState }) => {
             }}
           >
             Reset
-          </Button>
+          </Button> */}
         </div>
         <div style={{ display: "flex", flexGrow: 1 }}>
           <DealerHandView hand={appState.simulatedGameState.dealer} />

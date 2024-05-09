@@ -1,7 +1,5 @@
 import { CSSProperties, FC } from "react";
 import { Hand, HandWithPrescription } from "../types";
-import { Chip } from "@mui/joy";
-import { LightbulbOutlined } from "@mui/icons-material";
 
 const CARD_WIDTH = "7vw";
 const CARD_HEIGHT = "9.96vw";
@@ -64,7 +62,7 @@ const PlayerView: FC<Props> = ({ hands: handWithPrescriptions, style }) => {
                 }}
               />
             ))}
-            {handWithPrescription.prescription && (
+            {/* {handWithPrescription.prescription && (
               <Chip
                 color="primary"
                 startDecorator={<LightbulbOutlined fontSize="small" />}
@@ -76,7 +74,7 @@ const PlayerView: FC<Props> = ({ hands: handWithPrescriptions, style }) => {
               >
                 {handWithPrescription.prescription}
               </Chip>
-            )}
+            )} */}
           </div>
         ))}
       </div>
