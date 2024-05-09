@@ -23,6 +23,8 @@ const App = () => {
       //       { suit: "spades", rank: "4" },
       //       { suit: "diamonds", rank: "queen" },
       //     ],
+      //     [],
+      //     [],
       //   ],
       //   player2: [[{ suit: "hearts", rank: "10" }]],
       //   player3: [],
@@ -69,7 +71,7 @@ const App = () => {
               return ws.send(blob!);
             }, "image/jpeg");
           }
-        }, 1000);
+        }, 1500);
       });
   }, [appState.kind]);
 
