@@ -14,7 +14,7 @@ const App = () => {
   const [appState, setAppState] = useState<AppState>(initialSetupState);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://10.69.221.34:4444");
+    const ws = new WebSocket("ws://172.20.10.2:4444");
     ws.onmessage = e => {
       // const inferredFrame: InferredFrame = {
       //   dealer: [[{ suit: "clubs", rank: "king" }]],
