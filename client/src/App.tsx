@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Video } from "./components/Video";
-import { AppState, InferredFrame } from "./types";
+import { AppState } from "./types";
 import {
   assimilateUpdatedState,
   inferredFrameToFrame,
